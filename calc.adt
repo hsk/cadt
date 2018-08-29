@@ -1,0 +1,36 @@
+%{
+#include "adt/primitive.h"
+#include "parser.tab.h"
+%}
+expr
+  = EINT(long v)
+  | EADD(expr *l, expr *r)
+  | ESUB(expr *l, expr *r)
+  | EMUL(expr *l, expr *r)
+  | EDIV(expr *l, expr *r);
+%{
+static long eval(expr *e) {
+  long v;
+  expr *l, *r;
+  switch (e->tag) {
+  csEINT(e,v)   return v;
+  csEADD(e,l,r) return eval(l) + eval(r);
+  csESUB(e,l,r) return eval(l) - eval(r);
+  csEMUL(e,l,r) return eval(l) * eval(r);
+  csEDIV(e,l,r) return eval(l) / eval(r);
+  }
+}
+extern expr* root;
+extern FILE* yyin;
+int main(int argc, char *argv[]) {
+  char* buf="2*2+4* ( 5 - 1 ) \n";
+  yyin = fmemopen(buf, strlen(buf), "r");
+  int rc = yyparse();
+  if(rc != 0) return rc;
+  expr *e = root;
+  prexpr(0,e); printf("\n");
+  printf("%s = %ld\n", buf, eval(e));
+  fdexpr(&e);
+  return 0;
+}
+%}
